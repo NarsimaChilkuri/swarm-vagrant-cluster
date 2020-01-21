@@ -1,0 +1,47 @@
+version: '3'
+services:
+  db:
+    image: centos/postgresql-94-centos7
+    volumes:
+      - "/mnt/sharedfolder_client:/var/lib/postgresql/data/"
+    deploy:
+      placement:
+        constraints: [node.role == worker]
+      replicas: 1
+    restart: always
+    environment:
+      - POSTGRESQL_USER=railsuser
+      - POSTGRESQL_DATABASE=railsapp 
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_ADMIN_PASSWORD=password
+    ports:
+      - "5432:5432"
+  app:
+    image: 74744556/rails-chat-app:v1
+    deploy:
+      placement:
+        constraints: [node.role == worker]
+      replicas: 3
+    ports:
+      - "3001:3000"
+    depends_on:
+      - db
+      - redis
+    links:
+      - db
+      - redis
+    environment:
+      - DB_USER=railsuser
+      - DB_NAME=railsapp
+      - DB_PASSWORD=password
+      - DB_HOST=db
+  redis:
+    image: redis:3.2.0
+    deploy:
+      placement:
+        constraints: [node.role == worker]
+      replicas: 1
+    ports: 
+      - "6379:6379"
+    command: redis-server
+
